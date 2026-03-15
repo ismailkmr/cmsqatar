@@ -12,7 +12,7 @@ export default function Bills() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bills Storages</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bills Storage</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Day-wise categorized receipts and invoices.</p>
         </div>
         
