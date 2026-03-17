@@ -1,11 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { ShieldCheck, UserCheck, Calculator, UserCircle2 } from 'lucide-react';
+import { Lock, User } from 'lucide-react';
 
 export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   // If already logged in, redirect to home
   useEffect(() => {
@@ -14,33 +17,28 @@ export default function Login() {
     }
   }, [user, navigate]);
 
-  const handleRoleLogin = (role) => {
-    login(role);
-    navigate('/');
+  // Hardcoded credentials as requested
+  const credentials = {
+    'admin': { password: 'admin@123', role: ROLES.ADMIN },
+    'owner': { password: 'owner@123', role: ROLES.OWNER },
+    'accountant': { password: 'accountant@123', role: ROLES.ACCOUNTANT },
+    'staff': { password: 'staff@123', role: ROLES.STAFF }
   };
 
-  const roleDefinitions = [
-    {
-      role: ROLES.ADMIN,
-      desc: 'System-wide access and management',
-      icon: <ShieldCheck size={36} className="text-blue-500" />
-    },
-    {
-      role: ROLES.OWNER,
-      desc: 'Full shop dashboard and compliance control',
-      icon: <UserCheck size={36} className="text-purple-500" />
-    },
-    {
-      role: ROLES.ACCOUNTANT,
-      desc: 'Ledgers, Balance Sheet & Daybook tracking',
-      icon: <Calculator size={36} className="text-green-500" />
-    },
-    {
-      role: ROLES.STAFF,
-      desc: 'Basic entry submission and photo uploads',
-      icon: <UserCircle2 size={36} className="text-orange-500" />
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const lowerUsername = username.toLowerCase();
+    const userRecord = credentials[lowerUsername];
+
+    if (userRecord && userRecord.password === password) {
+      login(userRecord.role);
+      navigate('/');
+    } else {
+      setError('Invalid username or password');
     }
-  ];
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden dark:bg-black transition-colors duration-300">
@@ -51,34 +49,76 @@ export default function Login() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <h2 className="mt-6 text-center text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-          CSMS Prototype
+          CSMS Login
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          Select a role to simulate login and test permissions
+          Enter your credentials to access the system
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl relative z-10">
-        <div className="glass-panel py-8 px-4 sm:px-10 rounded-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {roleDefinitions.map((item) => (
-              <button
-                key={item.role}
-                onClick={() => handleRoleLogin(item.role)}
-                className="flex flex-col items-center text-center p-6 border border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 rounded-xl hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl dark:hover:shadow-indigo-900/20 hover:-translate-y-1 transition-all duration-300 group"
-              >
-                <div className="p-3 rounded-full bg-gray-50 dark:bg-gray-900/50 mb-4 group-hover:scale-110 transition-transform">
-                  {item.icon}
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="glass-panel py-8 px-4 sm:px-10 rounded-2xl bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border border-white/20 dark:border-gray-700/50 shadow-2xl">
+          <form className="space-y-6" onSubmit={handleLogin}>
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-md">
+                <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Username
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
-                  {item.role}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {item.desc}
-                </p>
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white transition-all outline-none"
+                  placeholder="admin"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Password
+              </label>
+              <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white transition-all outline-none"
+                  placeholder="admin@123"
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform transition-all duration-200 hover:scale-[1.02]"
+              >
+                Sign In
               </button>
-            ))}
-          </div>
+            </div>
+            
+            <div className="text-center mt-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Demo accounts: admin / owner / accountant / staff
+                <br/>Password format: [role]@123
+              </p>
+            </div>
+          </form>
         </div>
       </div>
     </div>
