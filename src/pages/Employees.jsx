@@ -1,14 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { CalendarClock, UserPlus, Info } from 'lucide-react';
+import { CalendarClock, UserPlus, Info, X, Check } from 'lucide-react';
 
 export default function Employees() {
-  const { employees } = useData();
+  const { employees, addEmployee } = useData();
   const { hasAccess } = useAuth();
   
   const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER]);
   const currentDate = new Date();
+
+  // Form state
+  const [isAdding, setIsAdding] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    position: '',
+    status: 'Active',
+    joinDate: '',
+    idExpiry: '',
+    password: '' // Explicitly asked by user
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    if (formData.name && formData.position && formData.joinDate && formData.idExpiry && formData.password) {
+      addEmployee({
+        name: formData.name,
+        position: formData.position,
+        status: formData.status,
+        joinDate: formData.joinDate,
+        idExpiry: formData.idExpiry,
+        // password is saved but obviously this is heavily simplified for the prototype
+      });
+      setIsAdding(false);
+      setFormData({
+        name: '', position: '', status: 'Active', joinDate: '', idExpiry: '', password: ''
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -17,13 +51,63 @@ export default function Employees() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Employees</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage staff and track document expiry.</p>
         </div>
-        {canEdit && (
-          <button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm shadow-purple-600/20">
+        {canEdit && !isAdding && (
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm shadow-purple-600/20"
+          >
             <UserPlus size={18} />
             <span>Add Employee</span>
           </button>
         )}
       </div>
+
+      {isAdding && (
+        <div className="glass-panel p-6 rounded-2xl shadow-lg border border-purple-100 dark:border-purple-900/50 bg-white/50 dark:bg-gray-800/50">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">New Employee Details</h3>
+            <button onClick={() => setIsAdding(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <X size={20} />
+            </button>
+          </div>
+          <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+              <input type="text" name="name" required value={formData.name} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" placeholder="John Doe" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Position</label>
+              <input type="text" name="position" required value={formData.position} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" placeholder="Cashier" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+              <select name="status" value={formData.status} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Join Date</label>
+              <input type="date" name="joinDate" required value={formData.joinDate} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Expiry Date</label>
+              <input type="date" name="idExpiry" required value={formData.idExpiry} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account Password</label>
+              <input type="password" name="password" required value={formData.password} onChange={handleInputChange} className="w-full px-3 py-2 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" placeholder="Staff Login Password" />
+            </div>
+            <div className="lg:col-span-3 flex justify-end gap-3 mt-2">
+              <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
+              <button type="submit" className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-5 py-2 rounded-xl transition shadow-md shadow-purple-500/20">
+                <Check size={18} />
+                <span>Save Employee</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="glass-panel p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
         <div className="overflow-x-auto rounded-xl">
@@ -94,3 +178,4 @@ export default function Employees() {
     </div>
   );
 }
+
