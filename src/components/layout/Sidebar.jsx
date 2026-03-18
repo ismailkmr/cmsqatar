@@ -8,7 +8,6 @@ import {
   FileText, 
   Scale, 
   Receipt,
-  ShoppingCart,
   LogOut
 } from 'lucide-react';
 
@@ -51,12 +50,6 @@ export default function Sidebar() {
       path: '/bills',
       icon: <Receipt size={20} />,
       roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]
-    },
-    {
-      label: 'Purchase Report',
-      path: '/purchase-report',
-      icon: <ShoppingCart size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]
     }
   ];
 

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
 import { 
@@ -7,9 +6,7 @@ import {
   TrendingDown, 
   Wallet, 
   Users, 
-  AlertTriangle,
-  ShoppingCart,
-  ArrowRight
+  AlertTriangle 
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -125,24 +122,6 @@ export default function Dashboard() {
           />
         )}
       </div>
-
-      {/* Quick Actions (For Owners/Admins) */}
-      {(user?.role === ROLES.OWNER || user?.role === ROLES.ADMIN) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Link to="/purchase-report" className="glass p-5 rounded-2xl flex items-center justify-between hover:bg-white/50 dark:hover:bg-gray-800/50 hover:-translate-y-1 transition-all duration-300 group border border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl">
-                <ShoppingCart size={24} />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Purchase Report</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">View dynamic vendor invoices</p>
-              </div>
-            </div>
-            <ArrowRight className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" size={20} />
-          </Link>
-        </div>
-      )}
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
