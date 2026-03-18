@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { CalendarClock, UserPlus, Info, X, Check } from 'lucide-react';
+import { CalendarClock, UserPlus, Info, X, Check, Paperclip } from 'lucide-react';
 
 export default function Employees() {
   const { employees, addEmployee } = useData();
@@ -12,14 +12,47 @@ export default function Employees() {
 
   // Form state
   const [isAdding, setIsAdding] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     position: '',
     status: 'Active',
     joinDate: '',
     idExpiry: '',
-    password: '' // Explicitly asked by user
+    password: '', // Explicitly asked by user
+    billUrl: ''
   });
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const uploadData = new FormData();
+    uploadData.append('bill', file);
+
+    setUploading(true);
+    setUploadError('');
+
+    try {
+      const response = await fetch('http://localhost:3002/api/upload', {
+        method: 'POST',
+        body: uploadData,
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setFormData(prev => ({ ...prev, billUrl: data.url }));
+      } else {
+        setUploadError(data.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadError('Failed to connect to upload server');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -35,12 +68,14 @@ export default function Employees() {
         status: formData.status,
         joinDate: formData.joinDate,
         idExpiry: formData.idExpiry,
+        billUrl: formData.billUrl,
         // password is saved but obviously this is heavily simplified for the prototype
       });
       setIsAdding(false);
       setFormData({
-        name: '', position: '', status: 'Active', joinDate: '', idExpiry: '', password: ''
+        name: '', position: '', status: 'Active', joinDate: '', idExpiry: '', password: '', billUrl: ''
       });
+      setUploadError('');
     }
   };
 
@@ -98,6 +133,13 @@ export default function Employees() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account Password</label>
               <input type="password" name="password" required value={formData.password} onChange={handleInputChange} className="w-full px-3 py-2 border border-purple-300 dark:border-purple-600 rounded-lg focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white" placeholder="Staff Login Password" />
             </div>
+            <div className="col-span-1 md:col-span-2 lg:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Bill/Document</label>
+              <input type="file" onChange={handleFileChange} className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400 transition-all border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 p-1" />
+              {uploading && <p className="text-xs text-blue-500 mt-1">Uploading...</p>}
+              {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
+              {formData.billUrl && <a href={formData.billUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-green-600 dark:text-green-400 hover:underline mt-1 flex items-center gap-1"><Paperclip size={12} /> View Uploaded File</a>}
+            </div>
             <div className="lg:col-span-3 flex justify-end gap-3 mt-2">
               <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">Cancel</button>
               <button type="submit" className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-5 py-2 rounded-xl transition shadow-md shadow-purple-500/20">
@@ -119,6 +161,7 @@ export default function Employees() {
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Join Date</th>
                 <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Expiry Status</th>
+                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Document</th>
                 <th className="p-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
@@ -162,6 +205,16 @@ export default function Employees() {
                           <span className="text-xs text-gray-500 dark:text-gray-500">{emp.idExpiry}</span>
                         </div>
                       </div>
+                    </td>
+                    <td className="p-4">
+                      {emp.billUrl ? (
+                        <a href={emp.billUrl} target="_blank" rel="noopener noreferrer" className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 text-sm font-medium flex items-center gap-1 transition-colors">
+                          <Paperclip size={16} />
+                          View
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 text-sm">None</span>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { Plus, Trash2, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Image as ImageIcon, CheckCircle2, Loader2, ExternalLink } from 'lucide-react';
 
 export default function DayBook() {
   const { dayBook, addDayBookEntry, deleteDayBookEntry } = useData();
@@ -16,31 +16,59 @@ export default function DayBook() {
     description: '',
   });
   const [uploadText, setUploadText] = useState('Upload Photo/Bill');
+  const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]);
   // Staff can ADD, but maybe they shouldn't delete existing records or view full history without restriction,
   // but for this prototype, we'll let them add and see today's entries.
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.amount || !formData.category) return;
+
+    let imageUrl = null;
+
+    if (file) {
+      setIsUploading(true);
+      const uploadData = new FormData();
+      uploadData.append('bill', file);
+
+      try {
+        const res = await fetch('http://localhost:3002/api/upload', {
+          method: 'POST',
+          body: uploadData,
+        });
+        const data = await res.json();
+        if (data.success) {
+          imageUrl = data.url;
+        } else {
+          console.error("Upload failed", data.message);
+        }
+      } catch (err) {
+        console.error("Upload error", err);
+      }
+      setIsUploading(false);
+    }
 
     addDayBookEntry({
       ...formData,
       amount: parseFloat(formData.amount),
-      image: uploadText !== 'Upload Photo/Bill' ? uploadText : null
+      image: imageUrl
     });
     
     setShowModal(false);
     setFormData({ ...formData, amount: '', description: '', category: '' });
     setUploadText('Upload Photo/Bill');
+    setFile(null);
   };
 
-  const handleMockUpload = () => {
-    setUploadText('Uploading...');
-    setTimeout(() => {
-      setUploadText(`receipt_${Date.now()}.jpg`);
-    }, 1000);
+  const handleFileUpload = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setUploadText(selectedFile.name);
+    }
   };
 
   return (
@@ -94,9 +122,14 @@ export default function DayBook() {
                   </td>
                   <td className="p-4">
                     {entry.image ? (
-                      <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30">
-                        <ImageIcon size={12} /> View
-                      </span>
+                      <a 
+                        href={entry.image} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="flex items-center gap-1 w-fit text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                      >
+                        <ExternalLink size={12} /> View
+                      </a>
                     ) : (
                       <span className="text-gray-400 text-xs">-</span>
                     )}
@@ -175,25 +208,29 @@ export default function DayBook() {
                 />
               </div>
 
-              {/* Mock Photo Upload */}
-              <div 
-                onClick={handleMockUpload}
-                className="mt-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex flex-col items-center justify-center gap-2"
-              >
-                {uploadText.includes('receipt') ? (
+              {/* Bill/Photo Upload */}
+              <label className="mt-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex flex-col items-center justify-center gap-2 relative overflow-hidden group">
+                <input 
+                  type="file" 
+                  accept="image/*,application/pdf"
+                  onChange={handleFileUpload} 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer -z-1" 
+                />
+                {file ? (
                   <CheckCircle2 className="text-green-500" size={24} />
                 ) : (
-                  <ImageIcon className="text-gray-400" size={24} />
+                  <ImageIcon className="text-gray-400 group-hover:scale-110 transition-transform" size={24} />
                 )}
-                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{uploadText}</span>
-              </div>
+                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium max-w-full truncate px-2">{uploadText}</span>
+              </label>
 
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 rounded-lg transition-colors" disabled={isUploading}>
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                  Save Entry
+                <button type="submit" disabled={isUploading} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-75 disabled:cursor-not-allowed">
+                  {isUploading ? <Loader2 size={18} className="animate-spin" /> : null}
+                  {isUploading ? 'Uploading...' : 'Save Entry'}
                 </button>
               </div>
             </form>
