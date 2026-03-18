@@ -113,14 +113,12 @@ export default function Dashboard() {
           icon={<Wallet size={24} className="text-blue-500" />} 
           trend="+14.2%" trendUp={true}
         />
-        {user?.role !== ROLES.ACCOUNTANT && (
-          <MetricCard 
-            title="Active Employees" 
-            amount={metrics.activeEmployeesCount} 
-            icon={<Users size={24} className="text-purple-500" />} 
-            subtitle="2 expiring IDs"
-          />
-        )}
+        <MetricCard 
+          title="Active Employees" 
+          amount={metrics.activeEmployeesCount} 
+          icon={<Users size={24} className="text-purple-500" />} 
+          subtitle="2 expiring IDs"
+        />
       </div>
 
       {/* Charts Section */}

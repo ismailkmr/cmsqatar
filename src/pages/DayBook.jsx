@@ -17,7 +17,7 @@ export default function DayBook() {
   });
   const [uploadText, setUploadText] = useState('Upload Photo/Bill');
 
-  const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]);
+  const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER]);
   // Staff can ADD, but maybe they shouldn't delete existing records or view full history without restriction,
   // but for this prototype, we'll let them add and see today's entries.
 

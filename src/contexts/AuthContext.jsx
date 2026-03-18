@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 export const ROLES = {
   ADMIN: 'Admin',
   OWNER: 'Shop Owner',
-  ACCOUNTANT: 'Accountant',
   STAFF: 'Staff'
 };
 

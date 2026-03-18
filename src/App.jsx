@@ -12,7 +12,6 @@ import DayBook from './pages/DayBook';
 import Financials from './pages/Financials';
 import Employees from './pages/Employees';
 import Compliance from './pages/Compliance';
-import Bills from './pages/Bills';
 
 // Temporary placeholders until pages are built
 const Placeholder = ({ title }) => (
@@ -35,21 +34,21 @@ function App() {
               
               {/* Dashboard Access */}
               <Route index element={
-                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]}>
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER]}>
                   <Dashboard />
                 </ProtectedRoute>
               } />
 
               {/* Day Book Access (All roles) */}
               <Route path="daybook" element={
-                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]}>
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.STAFF]}>
                   <DayBook />
                 </ProtectedRoute>
               } />
 
               {/* Financials Access */}
               <Route path="financials" element={
-                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]}>
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER]}>
                   <Financials />
                 </ProtectedRoute>
               } />
@@ -68,12 +67,7 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Bills Storage Access */}
-              <Route path="bills" element={
-                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]}>
-                  <Bills />
-                </ProtectedRoute>
-              } />
+
 
             </Route>
 

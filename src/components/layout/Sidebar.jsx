@@ -7,7 +7,6 @@ import {
   Users, 
   FileText, 
   Scale, 
-  Receipt,
   LogOut
 } from 'lucide-react';
 
@@ -19,19 +18,19 @@ export default function Sidebar() {
       label: 'Dashboard',
       path: '/',
       icon: <LayoutDashboard size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]
+      roles: [ROLES.ADMIN, ROLES.OWNER]
     },
     {
       label: 'Day Book',
       path: '/daybook',
       icon: <BookOpen size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]
+      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.STAFF]
     },
     {
       label: 'Financials',
       path: '/financials',
       icon: <Scale size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]
+      roles: [ROLES.ADMIN, ROLES.OWNER]
     },
     {
       label: 'Employees',
@@ -44,12 +43,6 @@ export default function Sidebar() {
       path: '/compliance',
       icon: <FileText size={20} />,
       roles: [ROLES.ADMIN, ROLES.OWNER]
-    },
-    {
-      label: 'Bills Storage',
-      path: '/bills',
-      icon: <Receipt size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]
     }
   ];
 

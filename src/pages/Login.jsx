@@ -21,7 +21,6 @@ export default function Login() {
   const credentials = {
     'admin': { password: 'admin@123', role: ROLES.ADMIN },
     'owner': { password: 'owner@123', role: ROLES.OWNER },
-    'accountant': { password: 'accountant@123', role: ROLES.ACCOUNTANT },
     'staff': { password: 'staff@123', role: ROLES.STAFF }
   };
 
@@ -64,7 +63,7 @@ export default function Login() {
                 <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Username
@@ -111,11 +110,11 @@ export default function Login() {
                 Sign In
               </button>
             </div>
-            
+
             <div className="text-center mt-4">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Demo accounts: admin / owner / accountant / staff
-                <br/>Password format: [role]@123
+                Demo accounts: admin / owner / staff
+                <br />Password format: [role]@123
               </p>
             </div>
           </form>
