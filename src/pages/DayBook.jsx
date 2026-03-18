@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { Plus, Trash2, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Image as ImageIcon, CheckCircle2, Loader2, Upload } from 'lucide-react';
 
 export default function DayBook() {
   const { dayBook, addDayBookEntry, deleteDayBookEntry } = useData();
@@ -15,7 +15,7 @@ export default function DayBook() {
     amount: '',
     description: '',
   });
-  const [uploadText, setUploadText] = useState('Upload Photo/Bill');
+  const [uploadState, setUploadState] = useState({ text: 'Upload Photo/Bill', url: null, isUploading: false });
 
   const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER]);
   // Staff can ADD, but maybe they shouldn't delete existing records or view full history without restriction,
@@ -28,19 +28,43 @@ export default function DayBook() {
     addDayBookEntry({
       ...formData,
       amount: parseFloat(formData.amount),
-      image: uploadText !== 'Upload Photo/Bill' ? uploadText : null
+      image: uploadState.url
     });
     
     setShowModal(false);
     setFormData({ ...formData, amount: '', description: '', category: '' });
-    setUploadText('Upload Photo/Bill');
+    setUploadState({ text: 'Upload Photo/Bill', url: null, isUploading: false });
   };
 
-  const handleMockUpload = () => {
-    setUploadText('Uploading...');
-    setTimeout(() => {
-      setUploadText(`receipt_${Date.now()}.jpg`);
-    }, 1000);
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    setUploadState({ ...uploadState, text: 'Uploading...', isUploading: true });
+    
+    const uploadFormData = new FormData();
+    uploadFormData.append('bill', file);
+    
+    try {
+      const response = await fetch('http://localhost:3002/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        setUploadState({ 
+          text: result.filename, 
+          url: result.url, 
+          isUploading: false 
+        });
+      } else {
+        alert('Upload failed: ' + result.message);
+        setUploadState({ text: 'Upload Failed', url: null, isUploading: false });
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('An error occurred during upload.');
+      setUploadState({ text: 'Upload Error', url: null, isUploading: false });
+    }
   };
 
   return (
@@ -94,9 +118,14 @@ export default function DayBook() {
                   </td>
                   <td className="p-4">
                     {entry.image ? (
-                      <span className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30">
+                      <a 
+                        href={entry.image.startsWith('http') ? entry.image : `http://localhost:3002/uploads/${entry.image}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30 w-fit hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                      >
                         <ImageIcon size={12} /> View
-                      </span>
+                      </a>
                     ) : (
                       <span className="text-gray-400 text-xs">-</span>
                     )}
@@ -175,17 +204,29 @@ export default function DayBook() {
                 />
               </div>
 
-              {/* Mock Photo Upload */}
-              <div 
-                onClick={handleMockUpload}
-                className="mt-2 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex flex-col items-center justify-center gap-2"
-              >
-                {uploadText.includes('receipt') ? (
-                  <CheckCircle2 className="text-green-500" size={24} />
-                ) : (
-                  <ImageIcon className="text-gray-400" size={24} />
-                )}
-                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{uploadText}</span>
+              <div className="mt-2">
+                <label className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors flex flex-col items-center justify-center gap-2 ${
+                  uploadState.url ? 'border-green-500 bg-green-50/30 dark:bg-green-900/10' : 'border-gray-300 dark:border-gray-700'
+                }`}>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    onChange={(e) => handleFileUpload(e.target.files[0])}
+                    accept="image/*,.pdf"
+                  />
+                  {uploadState.isUploading ? (
+                    <Loader2 className="text-blue-500 animate-spin" size={24} />
+                  ) : uploadState.url ? (
+                    <CheckCircle2 className="text-green-500" size={24} />
+                  ) : (
+                    <Upload className="text-gray-400" size={24} />
+                  )}
+                  <span className={`text-sm font-medium ${
+                    uploadState.url ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    {uploadState.text}
+                  </span>
+                </label>
               </div>
 
               <div className="flex gap-3 justify-end pt-4 border-t border-gray-100 dark:border-gray-800">

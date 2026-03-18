@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { CalendarClock, UserPlus, Info, X, Check } from 'lucide-react';
+import { CalendarClock, UserPlus, Info, X, Check, Upload, Loader2 } from 'lucide-react';
 
 export default function Employees() {
-  const { employees, addEmployee } = useData();
+  const { employees, addEmployee, uploadBill } = useData();
   const { hasAccess } = useAuth();
 
   const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER]);
@@ -12,6 +12,7 @@ export default function Employees() {
 
   // Form state
   const [isAdding, setIsAdding] = useState(false);
+  const [uploadingId, setUploadingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     position: '',
@@ -41,6 +42,42 @@ export default function Employees() {
       setFormData({
         name: '', position: '', status: 'Active', joinDate: '', idExpiry: '', password: ''
       });
+    }
+  };
+
+  const handleUploadBill = async (employeeId, file) => {
+    if (!file) return;
+    setUploadingId(employeeId);
+    
+    const formData = new FormData();
+    formData.append('bill', file);
+    
+    try {
+      const response = await fetch('http://localhost:3002/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        if (uploadBill) {
+          uploadBill({
+            employeeId,
+            date: new Date().toISOString().split('T')[0],
+            url: result.url,
+            filename: result.filename,
+            description: `Employee ${employeeId} bill upload`
+          });
+        }
+        alert('Bill uploaded successfully!');
+      } else {
+        alert('Upload failed: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('An error occurred during upload.');
+    } finally {
+      setUploadingId(null);
     }
   };
 
@@ -165,9 +202,28 @@ export default function Employees() {
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
-                        <Info size={18} />
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <label 
+                          title="Upload Bill"
+                          className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                            uploadingId === emp.id 
+                              ? 'text-purple-400 bg-purple-50 dark:bg-purple-900/20' 
+                              : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                          }`}
+                        >
+                          {uploadingId === emp.id ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            onChange={(e) => handleUploadBill(emp.id, e.target.files[0])}
+                            accept="image/*,.pdf"
+                            disabled={uploadingId === emp.id}
+                          />
+                        </label>
+                        <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                          <Info size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
