@@ -27,8 +27,30 @@ export function DataProvider({ children }) {
   const [dayBook, setDayBook] = useState(initialDayBook);
   const [licenses, setLicenses] = useState(initialLicenses);
   const [bills, setBills] = useState([]); // Array of { id, date, url, description, category }
+  const [balanceSheetData, setBalanceSheetData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // --- Actions ---
+
+  // Fetch Balance Sheet
+  const fetchBalanceSheet = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:3002/api/balance-sheet');
+      const result = await response.json();
+      if (result.success) {
+        setBalanceSheetData(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching balance sheet:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBalanceSheet();
+  }, []);
 
   // Day Book
   const addDayBookEntry = (entry) => {
@@ -56,9 +78,9 @@ export function DataProvider({ children }) {
     const expiredLicensesCount = licenses.filter(l => l.status === 'Expired').length;
     
     return {
-      totalIncome,
-      totalExpense,
-      balance: totalIncome - totalExpense,
+      totalIncome: balanceSheetData?.totalAssets || totalIncome,
+      totalExpense: balanceSheetData?.totalLiabilities || totalExpense,
+      balance: balanceSheetData ? balanceSheetData.netValue : (totalIncome - totalExpense),
       activeEmployeesCount,
       expiredLicensesCount
     };
@@ -70,6 +92,7 @@ export function DataProvider({ children }) {
       dayBook, addDayBookEntry, deleteDayBookEntry,
       licenses,
       bills, uploadBill,
+      balanceSheetData, fetchBalanceSheet, loading,
       getDashboardMetrics
     }}>
       {children}

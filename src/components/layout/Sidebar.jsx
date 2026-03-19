@@ -8,6 +8,7 @@ import {
   FileText, 
   Scale, 
   Receipt,
+  Wallet,
   LogOut
 } from 'lucide-react';
 
@@ -31,6 +32,12 @@ export default function Sidebar() {
       label: 'Financials',
       path: '/financials',
       icon: <Scale size={20} />,
+      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]
+    },
+    {
+      label: 'Balance Sheet',
+      path: '/balancesheet',
+      icon: <Wallet size={20} />,
       roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]
     },
     {

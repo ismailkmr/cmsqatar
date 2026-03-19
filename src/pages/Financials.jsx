@@ -1,23 +1,31 @@
 import React from 'react';
 import { useData } from '../contexts/DataContext';
-import { FileSpreadsheet, Download } from 'lucide-react';
+import { FileSpreadsheet, Download, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Financials() {
-  const { dayBook, getDashboardMetrics } = useData();
+  const { dayBook, getDashboardMetrics, balanceSheetData, loading } = useData();
   const metrics = getDashboardMetrics();
 
-  // Simple aggregation for Ledger by category
-  const ledgerMap = new Map();
-  dayBook.forEach(entry => {
-    if (!ledgerMap.has(entry.category)) {
-      ledgerMap.set(entry.category, { income: 0, expense: 0 });
-    }
-    const cat = ledgerMap.get(entry.category);
-    if (entry.type === 'Income') cat.income += entry.amount;
-    else cat.expense += entry.amount;
-  });
+  // Simple aggregation for Ledger by category if API data is not available
+  let ledgerEntries = balanceSheetData?.ledgerSummary || [];
+  
+  if (ledgerEntries.length === 0) {
+    const ledgerMap = new Map();
+    dayBook.forEach(entry => {
+      if (!ledgerMap.has(entry.category)) {
+        ledgerMap.set(entry.category, { income: 0, expense: 0 });
+      }
+      const cat = ledgerMap.get(entry.category);
+      if (entry.type === 'Income') cat.income += entry.amount;
+      else cat.expense += entry.amount;
+    });
+    ledgerEntries = Array.from(ledgerMap, ([category, data]) => ({ category, ...data }));
+  }
 
-  const ledgerEntries = Array.from(ledgerMap, ([category, data]) => ({ category, ...data }));
+  if (loading) {
+    return <div className="p-8 text-center">Loading financial data...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -71,7 +79,12 @@ export default function Financials() {
 
         {/* Balance Sheet Summary */}
         <div className="glass-panel p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6">Balance Sheet (YTD)</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Balance Sheet (YTD)</h2>
+            <Link to="/balancesheet" className="text-blue-600 dark:text-blue-400 text-sm font-medium flex items-center gap-1 hover:underline">
+              View Detailed <ChevronRight size={14} />
+            </Link>
+          </div>
           
           <div className="flex-1 space-y-6">
             <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">

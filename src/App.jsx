@@ -13,6 +13,7 @@ import Financials from './pages/Financials';
 import Employees from './pages/Employees';
 import Compliance from './pages/Compliance';
 import Bills from './pages/Bills';
+import BalanceSheet from './pages/BalanceSheet';
 
 // Temporary placeholders until pages are built
 const Placeholder = ({ title }) => (
@@ -51,6 +52,13 @@ function App() {
               <Route path="financials" element={
                 <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]}>
                   <Financials />
+                </ProtectedRoute>
+              } />
+
+              {/* Balance Sheet Access */}
+              <Route path="balancesheet" element={
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]}>
+                  <BalanceSheet />
                 </ProtectedRoute>
               } />
 
