@@ -7,6 +7,7 @@ import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/Login';
+
 import Dashboard from './pages/Dashboard';
 import DayBook from './pages/DayBook';
 import Financials from './pages/Financials';
@@ -30,10 +31,10 @@ function App() {
           <Routes>
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
-            
+
             {/* Protected Routes Wrapper */}
             <Route path="/" element={<MainLayout />}>
-              
+
               {/* Dashboard Access */}
               <Route index element={
                 <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]}>
