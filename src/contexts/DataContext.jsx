@@ -2,12 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const DataContext = createContext();
 
-// Initial Mock Data
-const initialEmployees = [
-  { id: 1, name: 'Alice Smith', position: 'Cashier', status: 'Active', idExpiry: '2027-05-10', joinDate: '2023-01-15' },
-  { id: 2, name: 'Bob Johnson', position: 'Stock Clerk', status: 'Active', idExpiry: '2024-02-15', joinDate: '2022-11-01' }, // Overdue
-  { id: 3, name: 'Charlie Davis', position: 'Manager', status: 'Inactive', idExpiry: '2026-08-20', joinDate: '2021-06-20' },
-];
+// Initial Mock Data (employees now loaded from API)
 
 const initialDayBook = [
   { id: 101, date: '2026-03-14', type: 'Income', category: 'Sales', amount: 4500, description: 'Daily counter sales', image: null },
@@ -22,21 +17,33 @@ const initialLicenses = [
 ];
 
 export function DataProvider({ children }) {
-  // State for all our mock tables
-  const [employees, setEmployees] = useState(initialEmployees);
+  const [employees, setEmployees] = useState([]);
   const [dayBook, setDayBook] = useState(initialDayBook);
   const [licenses, setLicenses] = useState(initialLicenses);
-  const [bills, setBills] = useState([]); // Array of { id, date, url, description, category }
+  const [bills, setBills] = useState([]);
   const [balanceSheetData, setBalanceSheetData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // --- Actions ---
 
+  // Fetch employees from TiDB
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/employees`);
+      const result = await response.json();
+      if (result.success) {
+        setEmployees(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
   // Fetch Balance Sheet
   const fetchBalanceSheet = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3002/api/balance-sheet');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/balance-sheet`);
       const result = await response.json();
       if (result.success) {
         setBalanceSheetData(result.data);
@@ -49,6 +56,7 @@ export function DataProvider({ children }) {
   };
 
   useEffect(() => {
+    fetchEmployees();
     fetchBalanceSheet();
   }, []);
 
@@ -60,10 +68,8 @@ export function DataProvider({ children }) {
     setDayBook(prev => prev.filter(e => e.id !== id));
   };
 
-  // Employees
-  const addEmployee = (emp) => {
-    setEmployees(prev => [...prev, { id: Date.now(), ...emp }]);
-  };
+  // Employees — re-fetch from API after any add/delete
+  const refreshEmployees = () => fetchEmployees();
 
   // Bills
   const uploadBill = (bill) => {
@@ -88,7 +94,7 @@ export function DataProvider({ children }) {
 
   return (
     <DataContext.Provider value={{
-      employees, addEmployee,
+      employees, refreshEmployees,
       dayBook, addDayBookEntry, deleteDayBookEntry,
       licenses,
       bills, uploadBill,

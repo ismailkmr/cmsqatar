@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { FileSpreadsheet, Download, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Financials() {
-  const { dayBook, getDashboardMetrics, balanceSheetData, loading } = useData();
+  const { dayBook, getDashboardMetrics, balanceSheetData, fetchBalanceSheet, loading } = useData();
+  
+  useEffect(() => {
+    fetchBalanceSheet();
+  }, []);
+
   const metrics = getDashboardMetrics();
 
   // Simple aggregation for Ledger by category if API data is not available

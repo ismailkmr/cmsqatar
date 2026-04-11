@@ -6,9 +6,11 @@ import { Lock, User } from 'lucide-react';
 export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
 
   // If already logged in, redirect to home
   useEffect(() => {
@@ -17,28 +19,26 @@ export default function Login() {
     }
   }, [user, navigate]);
 
-  // Hardcoded credentials as requested
-  const credentials = {
-    'admin': { password: 'admin@123', role: ROLES.ADMIN },
-    'owner': { password: 'owner@123', role: ROLES.OWNER },
-    'accountant': { password: 'accountant@123', role: ROLES.ACCOUNTANT },
-    'staff': { password: 'staff@123', role: ROLES.STAFF }
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    console.log(email, password); 
     setError('');
+    setIsLoading(true);
 
-    const lowerUsername = username.toLowerCase();
-    const userRecord = credentials[lowerUsername];
-
-    if (userRecord && userRecord.password === password) {
-      login(userRecord.role);
-      navigate('/');
-    } else {
-      setError('Invalid username or password');
+    try {
+      const result = await login(email, password);
+      if (result.success) {
+        navigate('/');
+      } else {
+        setError(result.message || 'Invalid email or password');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden dark:bg-black transition-colors duration-300">
@@ -67,19 +67,19 @@ export default function Login() {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Username
+                Email
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white transition-all outline-none"
-                  placeholder="admin"
+                  placeholder="admin@csms.com"
                 />
               </div>
             </div>
@@ -106,16 +106,17 @@ export default function Login() {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform transition-all duration-200 hover:scale-[1.02]"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transform transition-all duration-200 hover:scale-[1.02] ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                Sign In
+                {isLoading ? 'Signing In...' : 'Sign In'}
               </button>
             </div>
             
             <div className="text-center mt-4">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Demo accounts: admin / owner / accountant / staff
-                <br/>Password format: [role]@123
+                Default admin email: admin@csms.com
+                <br/>Password: admin@123
               </p>
             </div>
           </form>

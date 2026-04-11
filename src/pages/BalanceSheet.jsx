@@ -14,8 +14,14 @@ import {
 export default function BalanceSheet() {
   const { balanceSheetData, fetchBalanceSheet, loading } = useData();
 
-  const assets = balanceSheetData?.breakdown.filter(item => item.type === 'Asset') || [];
-  const liabilities = balanceSheetData?.breakdown.filter(item => item.type === 'Liability') || [];
+  useEffect(() => {
+    fetchBalanceSheet();
+  }, []);
+
+  // For this prototype, we'll treat positive net categories as "revenue sources/assets" 
+  // and ledger entries with expenses as "cost centers/liabilities" for visualization.
+  const assets = balanceSheetData?.ledgerSummary.filter(item => item.income > 0) || [];
+  const liabilities = balanceSheetData?.ledgerSummary.filter(item => item.expense > 0) || [];
 
   if (loading && !balanceSheetData) {
     return (
@@ -97,7 +103,7 @@ export default function BalanceSheet() {
                   <span className="font-medium text-gray-700 dark:text-gray-200">{item.category}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">₹{item.amount.toLocaleString()}</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">₹{item.income.toLocaleString()}</span>
                   <ArrowRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                 </div>
               </div>
@@ -122,7 +128,7 @@ export default function BalanceSheet() {
                   <span className="font-medium text-gray-700 dark:text-gray-200">{item.category}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">₹{item.amount.toLocaleString()}</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">₹{item.expense.toLocaleString()}</span>
                   <ArrowRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
                 </div>
               </div>

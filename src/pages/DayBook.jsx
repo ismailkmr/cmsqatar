@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { useData } from '../contexts/DataContext';
+import React, { useState, useEffect } from 'react';
 import { useAuth, ROLES } from '../contexts/AuthContext';
 import { Plus, Trash2, Image as ImageIcon, CheckCircle2, Loader2, Upload } from 'lucide-react';
 
 export default function DayBook() {
-  const { dayBook, addDayBookEntry, deleteDayBookEntry } = useData();
   const { hasAccess, user } = useAuth();
   
+  const [daybookEntries, setDaybookEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -17,23 +17,59 @@ export default function DayBook() {
   });
   const [uploadState, setUploadState] = useState({ text: 'Upload Photo/Bill', url: null, isUploading: false });
 
+  useEffect(() => {
+    fetchDaybook();
+  }, []);
+
+  const fetchDaybook = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/daybook`);
+      const result = await response.json();
+      if (result.success) {
+        setDaybookEntries(result.data);
+      } else {
+        console.error('Failed to fetch daybook:', result.message);
+      }
+    } catch (err) {
+      console.error('Error fetching daybook:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]);
   // Staff can ADD, but maybe they shouldn't delete existing records or view full history without restriction,
   // but for this prototype, we'll let them add and see today's entries.
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.amount || !formData.category) return;
 
-    addDayBookEntry({
-      ...formData,
-      amount: parseFloat(formData.amount),
-      image: uploadState.url
-    });
-    
-    setShowModal(false);
-    setFormData({ ...formData, amount: '', description: '', category: '' });
-    setUploadState({ text: 'Upload Photo/Bill', url: null, isUploading: false });
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/daybook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          txn_date: formData.date,
+          amount: parseFloat(formData.amount),
+          image: uploadState.url
+        })
+      });
+      const result = await response.json();
+      if (result.success) {
+        setShowModal(false);
+        setFormData({ ...formData, amount: '', description: '', category: '' });
+        setUploadState({ text: 'Upload Photo/Bill', url: null, isUploading: false });
+        fetchDaybook();
+      } else {
+        alert('Failed to save entry: ' + result.message);
+      }
+    } catch (err) {
+      console.error('Error saving entry:', err);
+      alert('Error saving entry to database');
+    }
   };
 
   const handleFileUpload = async (file) => {
@@ -44,7 +80,7 @@ export default function DayBook() {
     uploadFormData.append('bill', file);
     
     try {
-      const response = await fetch('http://localhost:3002/api/upload', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
         method: 'POST',
         body: uploadFormData,
       });
@@ -99,50 +135,82 @@ export default function DayBook() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
-              {dayBook.map((entry) => (
-                <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="p-4 text-gray-900 dark:text-gray-200">{entry.date}</td>
-                  <td className="p-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
-                      entry.type === 'Income' 
-                        ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800/30' 
-                        : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30'
-                    }`}>
-                      {entry.type}
-                    </span>
+              {loading ? (
+                <tr>
+                   <td colSpan={canEdit ? 7 : 6} className="p-8 text-center text-gray-500">
+                    <div className="flex items-center justify-center gap-2">
+                       <Loader2 className="animate-spin" size={20} />
+                       <span>Loading entries...</span>
+                    </div>
                   </td>
-                  <td className="p-4 text-gray-700 dark:text-gray-300">{entry.category}</td>
-                  <td className="p-4 text-gray-500 dark:text-gray-400 text-sm max-w-[200px] truncate">{entry.description || '-'}</td>
-                  <td className={`p-4 font-semibold ${entry.type === 'Income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {entry.type === 'Income' ? '+' : '-'}₹{entry.amount}
-                  </td>
-                  <td className="p-4">
-                    {entry.image ? (
-                      <a 
-                        href={entry.image.startsWith('http') ? entry.image : `http://localhost:3002/uploads/${entry.image}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30 w-fit hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                      >
-                        <ImageIcon size={12} /> View
-                      </a>
-                    ) : (
-                      <span className="text-gray-400 text-xs">-</span>
-                    )}
-                  </td>
-                  {canEdit && (
-                    <td className="p-4 text-right">
-                      <button 
-                        onClick={() => deleteDayBookEntry(entry.id)}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  )}
                 </tr>
-              ))}
-              {dayBook.length === 0 && (
+              ) : daybookEntries.map((entry) => {
+                const isIncome = entry.income > 0 || (entry.type === 'Income');
+                const amount = isIncome ? entry.income : entry.expense;
+                const displayDate = entry.txn_date ? new Date(entry.txn_date).toLocaleDateString() : (entry.date || '-');
+                
+                return (
+                  <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                    <td className="p-4 text-gray-900 dark:text-gray-200">{displayDate}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                        isIncome 
+                          ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border border-green-200 dark:border-green-800/30' 
+                          : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30'
+                      }`}>
+                        {isIncome ? 'Income' : 'Expense'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-700 dark:text-gray-300">{entry.category}</td>
+                    <td className="p-4 text-gray-500 dark:text-gray-400 text-sm max-w-[200px] truncate">{entry.description || '-'}</td>
+                    <td className={`p-4 font-semibold ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      {isIncome ? '+' : '-'}₹{amount}
+                    </td>
+                    <td className="p-4">
+                      {entry.image ? (
+                        <a 
+                          href={entry.image.startsWith('http') ? entry.image : `${import.meta.env.VITE_API_URL}/uploads/${entry.image}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-800/30 w-fit hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                        >
+                          <ImageIcon size={12} /> View
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
+                    </td>
+                    {canEdit && (
+                      <td className="p-4 text-right">
+                        <button 
+                          onClick={async () => {
+                            if (window.confirm('Delete this entry?')) {
+                              try {
+                                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/daybook/${entry.id}`, {
+                                  method: 'DELETE'
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                  fetchDaybook();
+                                } else {
+                                  alert('Failed to delete: ' + result.message);
+                                }
+                              } catch (err) {
+                                console.error('Error deleting entry:', err);
+                                alert('Error deleting entry from database');
+                              }
+                            }
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+              {!loading && daybookEntries.length === 0 && (
                 <tr>
                   <td colSpan={canEdit ? 7 : 6} className="p-8 text-center text-gray-500">
                     No entries found.

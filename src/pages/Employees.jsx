@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { CalendarClock, UserPlus, Info, X, Check, Upload, Loader2 } from 'lucide-react';
+import { CalendarClock, UserPlus, Info, X, Check, Upload, Loader2, Trash2 } from 'lucide-react';
 
 export default function Employees() {
-  const { employees, addEmployee, uploadBill } = useData();
+  const { uploadBill } = useData();
   const { hasAccess } = useAuth();
-  
+
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
   const canEdit = hasAccess([ROLES.ADMIN, ROLES.OWNER]);
   const currentDate = new Date();
 
@@ -19,46 +21,79 @@ export default function Employees() {
     status: 'Active',
     joinDate: '',
     idExpiry: '',
-    password: '' // Explicitly asked by user
+    password: '',
+    qatarId: '',
+    visaExpiry: '',
+    nationality: '',
+    passportNumber: ''
   });
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/employees`);
+      const result = await response.json();
+      if (result.success) {
+        setEmployees(result.data);
+      }
+    } catch (err) {
+      console.error('Error fetching employees:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (formData.name && formData.position && formData.joinDate && formData.idExpiry && formData.password) {
-      addEmployee({
-        name: formData.name,
-        position: formData.position,
-        status: formData.status,
-        joinDate: formData.joinDate,
-        idExpiry: formData.idExpiry,
-        // password is saved but obviously this is heavily simplified for the prototype
-      });
-      setIsAdding(false);
-      setFormData({
-        name: '', position: '', status: 'Active', joinDate: '', idExpiry: '', password: ''
-      });
+    if (formData.name && formData.position) {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/employees`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          setIsAdding(false);
+          setFormData({
+            name: '', position: '', status: 'Active', joinDate: '', idExpiry: '', password: '',
+            qatarId: '', visaExpiry: '', nationality: '', passportNumber: ''
+          });
+          fetchEmployees();
+        } else {
+          alert('Failed to save employee: ' + result.message);
+        }
+      } catch (err) {
+        console.error('Error saving employee:', err);
+        alert('An error occurred while saving the employee.');
+      }
     }
   };
 
   const handleUploadBill = async (employeeId, file) => {
     if (!file) return;
     setUploadingId(employeeId);
-    
+
     const formData = new FormData();
     formData.append('bill', file);
-    
+
     try {
-      const response = await fetch('http://localhost:3002/api/upload', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/upload`, {
         method: 'POST',
         body: formData,
       });
       const result = await response.json();
-      
+
       if (result.success) {
         if (uploadBill) {
           uploadBill({
@@ -89,7 +124,7 @@ export default function Employees() {
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage staff and track document expiry.</p>
         </div>
         {canEdit && !isAdding && (
-          <button 
+          <button
             onClick={() => setIsAdding(true)}
             className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm shadow-purple-600/20"
           >
@@ -125,11 +160,23 @@ export default function Employees() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Join Date</label>
-              <input type="date" name="joinDate" required value={formData.joinDate} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+              <input type="date" name="joinDate" value={formData.joinDate} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Expiry Date</label>
-              <input type="date" name="idExpiry" required value={formData.idExpiry} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+              <input type="date" name="idExpiry" value={formData.idExpiry} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Qatar ID</label>
+              <input type="text" name="qatarId" value={formData.qatarId} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" placeholder="290..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nationality</label>
+              <input type="text" name="nationality" value={formData.nationality} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" placeholder="Indian" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Passport Number</label>
+              <input type="text" name="passportNumber" value={formData.passportNumber} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white" placeholder="L..." />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Account Password</label>
@@ -160,10 +207,30 @@ export default function Employees() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {employees.map((emp) => {
-                const expiryDate = new Date(emp.idExpiry);
-                const isExpired = expiryDate < currentDate;
-                const isExpiringSoon = !isExpired && (expiryDate - currentDate) / (1000 * 60 * 60 * 24) < 30;
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-gray-500">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="animate-spin" size={20} />
+                      <span>Loading employees...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : employees.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-gray-500">
+                    No employees found.
+                  </td>
+                </tr>
+              ) : employees.map((emp) => {
+                // Map snake_case database fields to camelCase for the frontend
+                const joinDate = emp.join_date || emp.joinDate;
+                const idExpiry = emp.id_expiry || emp.idExpiry;
+                const qatarId = emp.qatar_id || emp.qatarId || 'N/A';
+
+                const expiryDate = idExpiry ? new Date(idExpiry) : null;
+                const isExpired = expiryDate && expiryDate < currentDate;
+                const isExpiringSoon = expiryDate && !isExpired && (expiryDate - currentDate) / (1000 * 60 * 60 * 24) < 30;
 
                 return (
                   <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -177,48 +244,69 @@ export default function Employees() {
                     </td>
                     <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{emp.position}</td>
                     <td className="p-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${
-                        emp.status === 'Active' 
-                          ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30' 
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${emp.status === 'Active'
+                          ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30'
                           : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                      }`}>
+                        }`}>
                         {emp.status}
                       </span>
                     </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{emp.joinDate}</td>
+                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{joinDate}</td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         {isExpired && <CalendarClock size={16} className="text-red-500" />}
                         {isExpiringSoon && <CalendarClock size={16} className="text-yellow-500" />}
                         {(!isExpired && !isExpiringSoon) && <CalendarClock size={16} className="text-green-500" />}
-                        
+
                         <div className="flex flex-col">
                           <span className={`text-sm font-medium ${isExpired ? 'text-red-600 dark:text-red-400' : isExpiringSoon ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-700 dark:text-gray-300'}`}>
                             {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Valid'}
                           </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-500">{emp.idExpiry}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-500">{idExpiry}</span>
                         </div>
                       </div>
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <label 
+                        <label
                           title="Upload Bill"
-                          className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                            uploadingId === emp.id 
-                              ? 'text-purple-400 bg-purple-50 dark:bg-purple-900/20' 
+                          className={`p-2 rounded-lg transition-colors cursor-pointer ${uploadingId === emp.id
+                              ? 'text-purple-400 bg-purple-50 dark:bg-purple-900/20'
                               : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-                          }`}
+                            }`}
                         >
                           {uploadingId === emp.id ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
-                          <input 
-                            type="file" 
-                            className="hidden" 
+                          <input
+                            type="file"
+                            className="hidden"
                             onChange={(e) => handleUploadBill(emp.id, e.target.files[0])}
                             accept="image/*,.pdf"
                             disabled={uploadingId === emp.id}
                           />
                         </label>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm('Delete this employee?')) {
+                              try {
+                                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/employees/${emp.id}`, {
+                                  method: 'DELETE'
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                  fetchEmployees();
+                                } else {
+                                  alert('Failed to delete: ' + result.message);
+                                }
+                              } catch (err) {
+                                console.error('Error deleting employee:', err);
+                                alert('Error deleting employee from database');
+                              }
+                            }
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                         <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
                           <Info size={18} />
                         </button>

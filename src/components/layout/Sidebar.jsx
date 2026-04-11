@@ -61,13 +61,18 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen transition-colors duration-200">
+    <aside className="w-64 min-w-[256px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen transition-all duration-200 sticky top-0 z-40">
+
       <div className="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-800">
         <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">CSMS Pro</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+        {navItems.filter(item => hasAccess(item.roles)).length === 0 && (
+          <div className="px-3 py-4 text-xs text-gray-400 italic">No menu items available for your role</div>
+        )}
         {navItems.filter(item => hasAccess(item.roles)).map((item) => (
+
           <NavLink
             key={item.path}
             to={item.path}

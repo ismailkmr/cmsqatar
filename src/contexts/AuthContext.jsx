@@ -22,14 +22,33 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = (role) => {
-    const mockUser = {
-      id: `u-${Date.now()}`,
-      name: `Mock ${role}`,
-      role: role,
-    };
-    setUser(mockUser);
-    localStorage.setItem('csmsUser', JSON.stringify(mockUser));
+  const login = async (email, password) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const userWithToken = {
+          ...data.user,
+          token: data.token
+        };
+        setUser(userWithToken);
+        localStorage.setItem('csmsUser', JSON.stringify(userWithToken));
+        return { success: true };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, message: 'Server connection failed' };
+    }
   };
 
   const logout = () => {
@@ -37,11 +56,14 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('csmsUser');
   };
 
+
   // Helper function to check role access
   const hasAccess = (allowedRoles) => {
     if (!user) return false;
-    return allowedRoles.includes(user.role);
+    const userRole = user.role?.toLowerCase();
+    return allowedRoles.some(role => role.toLowerCase() === userRole);
   };
+
 
   return (
     <AuthContext.Provider value={{ user, login, logout, hasAccess }}>
