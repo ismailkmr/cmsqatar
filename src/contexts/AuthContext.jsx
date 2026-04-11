@@ -52,11 +52,33 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const register = async (name, email, password, role) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        return { success: true };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { success: false, message: 'Server connection failed' };
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('csmsUser');
   };
-
 
   // Helper function to check role access
   const hasAccess = (allowedRoles) => {
@@ -65,9 +87,8 @@ export function AuthProvider({ children }) {
     return allowedRoles.some(role => role.toLowerCase() === userRole);
   };
 
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, hasAccess }}>
+    <AuthContext.Provider value={{ user, login, logout, register, hasAccess }}>
       {children}
     </AuthContext.Provider>
   );

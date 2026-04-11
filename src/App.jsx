@@ -7,6 +7,7 @@ import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/Login';
+import Register from './pages/Register';
 
 import Dashboard from './pages/Dashboard';
 import DayBook from './pages/DayBook';
@@ -31,6 +32,7 @@ function App() {
           <Routes>
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
             {/* Protected Routes Wrapper */}
             <Route path="/" element={<MainLayout />}>
