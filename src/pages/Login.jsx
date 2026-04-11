@@ -21,10 +21,10 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    console.log(email, password); 
+    console.log(email, password);
     setError('');
     setIsLoading(true);
-    
+
 
     try {
       const result = await login(email, password);
@@ -50,7 +50,7 @@ export default function Login() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <h2 className="mt-6 text-center text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-          CSMS Login
+          SmartQ ERP Login
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Enter your credentials to access the system
@@ -65,7 +65,7 @@ export default function Login() {
                 <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email
@@ -113,11 +113,11 @@ export default function Login() {
                 {isLoading ? 'Signing In...' : 'Sign In'}
               </button>
             </div>
-            
+
             <div className="text-center mt-4">
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Default admin email: admin@csms.com
-                <br/>Password: admin@123
+                <br />Password: admin@123
               </p>
             </div>
           </form>
