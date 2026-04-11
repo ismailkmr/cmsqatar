@@ -24,6 +24,7 @@ export default function Login() {
     console.log(email, password); 
     setError('');
     setIsLoading(true);
+    
 
     try {
       const result = await login(email, password);
