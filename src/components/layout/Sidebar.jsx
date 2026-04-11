@@ -20,13 +20,13 @@ export default function Sidebar() {
       label: 'Dashboard',
       path: '/',
       icon: <LayoutDashboard size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]
+      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.SHOP]
     },
     {
       label: 'Day Book',
       path: '/daybook',
       icon: <BookOpen size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]
+      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF, ROLES.SHOP]
     },
     {
       label: 'Financials',

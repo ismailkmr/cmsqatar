@@ -36,10 +36,8 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { getDashboardMetrics, dayBook, licenses } = useData();
-  const { user } = useAuth();
-  
+  const { user } = useAuth();  
   const metrics = getDashboardMetrics();
-
   // Prepare data for line chart (last 7 days simulation)
   const lineData = {
     labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Today'],
