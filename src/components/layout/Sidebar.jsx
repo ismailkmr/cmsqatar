@@ -38,13 +38,13 @@ export default function Sidebar() {
       label: 'Balance Sheet',
       path: '/balancesheet',
       icon: <Wallet size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT]
+      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.SHOP]
     },
     {
       label: 'Employees',
       path: '/employees',
       icon: <Users size={20} />,
-      roles: [ROLES.ADMIN, ROLES.OWNER]
+      roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.SHOP]
     },
     {
       label: 'Compliance',
