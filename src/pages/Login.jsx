@@ -29,6 +29,8 @@ export default function Login() {
     try {
       const result = await login(email, password);
       if (result.success) {
+        // Save token to localStorage for easy access
+        localStorage.setItem('authToken', result.token);
         navigate('/');
       } else {
         setError(result.message || 'Invalid email or password');

@@ -9,7 +9,8 @@ import {
   Scale, 
   Receipt,
   Wallet,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -57,6 +58,12 @@ export default function Sidebar() {
       path: '/bills',
       icon: <Receipt size={20} />,
       roles: [ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]
+    },
+    {
+      label: 'System Users',
+      path: '/users',
+      icon: <Shield size={20} />,
+      roles: [ROLES.ADMIN]
     }
   ];
 

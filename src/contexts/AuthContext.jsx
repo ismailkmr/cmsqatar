@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
         };
         setUser(userWithToken);
         localStorage.setItem('csmsUser', JSON.stringify(userWithToken));
-        return { success: true };
+        return { success: true, user: userWithToken, token: data.token };
       } else {
         return { success: false, message: data.message };
       }
@@ -78,6 +78,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('csmsUser');
+    localStorage.removeItem('authToken');
   };
 
   // Helper function to check role access

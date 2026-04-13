@@ -84,7 +84,11 @@ export default function DayBook() {
         method: 'POST',
         body: uploadFormData,
       });
-      const result = await response.json();
+      
+      const result = await response.json().catch(() => ({ 
+        success: false, 
+        message: 'Server returned an invalid response. Please check server logs.' 
+      }));
       
       if (result.success) {
         setUploadState({ 
@@ -93,12 +97,12 @@ export default function DayBook() {
           isUploading: false 
         });
       } else {
-        alert('Upload failed: ' + result.message);
+        alert('Upload failed: ' + (result.message || 'Unknown error'));
         setUploadState({ text: 'Upload Failed', url: null, isUploading: false });
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('An error occurred during upload.');
+      alert('Network error or server unavailable. Please ensure the backend is running and reachable.');
       setUploadState({ text: 'Upload Error', url: null, isUploading: false });
     }
   };
