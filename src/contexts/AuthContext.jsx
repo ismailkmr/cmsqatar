@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
   // For simulation, load user from localStorage
   useEffect(() => {
     const savedUser = localStorage.getItem('csmsUser');
+
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -48,7 +49,7 @@ export function AuthProvider({ children }) {
       }
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, message: 'Server connection failed' };
+      return { success: false, message: 'Server connection failed!!' };
     }
   };
 

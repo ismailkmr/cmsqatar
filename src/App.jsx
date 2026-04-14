@@ -47,7 +47,7 @@ function App() {
 
               {/* Day Book Access (All roles) */}
               <Route path="daybook" element={
-                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.ACCOUNTANT, ROLES.STAFF]}>
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.OWNER, ROLES.SHOP, ROLES.ACCOUNTANT, ROLES.STAFF]}>
                   <DayBook />
                 </ProtectedRoute>
               } />

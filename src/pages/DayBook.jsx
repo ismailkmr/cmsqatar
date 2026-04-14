@@ -3,8 +3,7 @@ import { useAuth, ROLES } from '../contexts/AuthContext';
 import { Plus, Trash2, Image as ImageIcon, CheckCircle2, Loader2, Upload } from 'lucide-react';
 
 export default function DayBook() {
-  const { hasAccess, user } = useAuth();
-  
+  const { hasAccess, user } = useAuth();  
   const [daybookEntries, setDaybookEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
