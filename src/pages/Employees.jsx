@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth, ROLES } from '../contexts/AuthContext';
-import { CalendarClock, UserPlus, Info, X, Check, Upload, Loader2, Trash2 } from 'lucide-react';
+import { CalendarClock, UserPlus, Info, X, Check, Upload, Loader2, Trash2, Search } from 'lucide-react';
+import { AgGridReact } from 'ag-grid-react';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+
+// Register AG Grid modules
+
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function Employees() {
   const { uploadBill } = useData();
@@ -28,6 +34,8 @@ export default function Employees() {
     passportNumber: ''
   });
 
+  const [searchText, setSearchText] = useState('');
+
   useEffect(() => {
     fetchEmployees();
   }, []);
@@ -45,6 +53,117 @@ export default function Employees() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Cell Renderer for Employee Name & Avatar
+  const EmployeeRenderer = (params) => (
+    <div className="flex items-center gap-3 py-1">
+      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center font-bold text-gray-500 dark:text-gray-400 shrink-0 shadow-sm border border-white dark:border-gray-800">
+        {params.data.name.charAt(0)}
+      </div>
+      <span className="font-semibold text-gray-900 dark:text-gray-200">{params.data.name}</span>
+    </div>
+  );
+
+  // Cell Renderer for Status Badge
+  const StatusRenderer = (params) => (
+    <div className="py-2">
+      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${params.value === 'Active'
+        ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30'
+        : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+      }`}>
+        {params.value}
+      </span>
+    </div>
+  );
+
+  // Cell Renderer for Expiry Status
+  const ExpiryRenderer = (params) => {
+    const idExpiry = params.data.id_expiry || params.data.idExpiry;
+    if (!idExpiry) return <span className="text-gray-400">N/A</span>;
+    
+    const expiryDate = new Date(idExpiry);
+    const isExpired = expiryDate < currentDate;
+    const isExpiringSoon = !isExpired && (expiryDate - currentDate) / (1000 * 60 * 60 * 24) < 30;
+
+    return (
+      <div className="flex items-center gap-2 py-1">
+        {isExpired && <CalendarClock size={16} className="text-red-500" />}
+        {isExpiringSoon && <CalendarClock size={16} className="text-yellow-500" />}
+        {(!isExpired && !isExpiringSoon) && <CalendarClock size={16} className="text-green-500" />}
+        <div className="flex flex-col leading-tight">
+          <span className={`text-xs font-medium ${isExpired ? 'text-red-600 dark:text-red-400' : isExpiringSoon ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-700 dark:text-gray-300'}`}>
+            {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Valid'}
+          </span>
+          <span className="text-[10px] text-gray-500">{idExpiry}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Cell Renderer for Actions
+  const ActionsRenderer = (params) => (
+    <div className="flex justify-end gap-1 py-1">
+      <label
+        title="Upload Bill"
+        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${uploadingId === params.data.id
+          ? 'text-purple-400 bg-purple-50 dark:bg-purple-900/20'
+          : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+        }`}
+      >
+        {uploadingId === params.data.id ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+        <input
+          type="file"
+          className="hidden"
+          onChange={(e) => handleUploadBill(params.data.id, e.target.files[0])}
+          accept="image/*,.pdf"
+          disabled={uploadingId === params.data.id}
+        />
+      </label>
+      <button
+        onClick={async () => {
+          if (window.confirm('Delete this employee?')) {
+            try {
+              const response = await fetch(`${import.meta.env.VITE_API_URL}/api/employees/${params.data.id}`, {
+                method: 'DELETE'
+              });
+              const result = await response.json();
+              if (result.success) {
+                fetchEmployees();
+              } else {
+                alert('Failed to delete: ' + result.message);
+              }
+            } catch (err) {
+              console.error('Error deleting employee:', err);
+              alert('Error deleting employee from database');
+            }
+          }
+        }}
+        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+      >
+        <Trash2 size={16} />
+      </button>
+      <button className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+        <Info size={16} />
+      </button>
+    </div>
+  );
+
+  const columnDefs = [
+    { field: 'name', headerName: 'Employee', cellRenderer: EmployeeRenderer, flex: 2, minWidth: 200 },
+    { field: 'position', headerName: 'Position', flex: 1.5, minWidth: 150 },
+    { field: 'status', headerName: 'Status', cellRenderer: StatusRenderer, flex: 1, minWidth: 100 },
+    { field: 'join_date', headerName: 'Join Date', flex: 1, minWidth: 120, valueGetter: p => p.data.join_date || p.data.joinDate },
+    { headerName: 'ID Expiry Status', cellRenderer: ExpiryRenderer, flex: 1.5, minWidth: 150 },
+    { headerName: 'Action', cellRenderer: ActionsRenderer, width: 140, sortable: false, filter: false, pinned: 'right' }
+  ];
+
+  const defaultColDef = {
+    sortable: true,
+    filter: true,
+    floatingFilter: true,
+    resizable: true,
+    suppressMovable: true,
   };
 
   const handleInputChange = (e) => {
@@ -127,10 +246,22 @@ export default function Employees() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Employees</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Manage staff and track document expiry.</p>
         </div>
+      </div>
+      <div className="flex justify-between items-center bg-white/50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 backdrop-blur-sm gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search employees..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none dark:text-white transition-all"
+          />
+        </div>
         {canEdit && !isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm shadow-purple-600/20"
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-medium transition-all shadow-sm shadow-purple-600/20 hover:scale-105 active:scale-95 whitespace-nowrap"
           >
             <UserPlus size={18} />
             <span>Add Employee</span>
@@ -197,130 +328,20 @@ export default function Employees() {
         </div>
       )}
 
-      <div className="glass-panel p-1 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-        <div className="overflow-x-auto rounded-xl">
-          <table className="w-full text-left bg-white dark:bg-gray-900">
-            <thead>
-              <tr className="bg-gray-50/50 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-800">
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Position</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Join Date</th>
-                <th className="p-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID Expiry Status</th>
-                <th className="p-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="p-8 text-center text-gray-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="animate-spin" size={20} />
-                      <span>Loading employees...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : employees.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="p-8 text-center text-gray-500">
-                    No employees found.
-                  </td>
-                </tr>
-              ) : employees.map((emp) => {
-                // Map snake_case database fields to camelCase for the frontend
-                const joinDate = emp.join_date || emp.joinDate;
-                const idExpiry = emp.id_expiry || emp.idExpiry;
-                const qatarId = emp.qatar_id || emp.qatarId || 'N/A';
-
-                const expiryDate = idExpiry ? new Date(idExpiry) : null;
-                const isExpired = expiryDate && expiryDate < currentDate;
-                const isExpiringSoon = expiryDate && !isExpired && (expiryDate - currentDate) / (1000 * 60 * 60 * 24) < 30;
-
-                return (
-                  <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center font-bold text-gray-500 dark:text-gray-400 shrink-0 shadow-sm border border-white dark:border-gray-800">
-                          {emp.name.charAt(0)}
-                        </div>
-                        <span className="font-semibold text-gray-900 dark:text-gray-200">{emp.name}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{emp.position}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border ${emp.status === 'Active'
-                          ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30'
-                          : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                        }`}>
-                        {emp.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{joinDate}</td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        {isExpired && <CalendarClock size={16} className="text-red-500" />}
-                        {isExpiringSoon && <CalendarClock size={16} className="text-yellow-500" />}
-                        {(!isExpired && !isExpiringSoon) && <CalendarClock size={16} className="text-green-500" />}
-
-                        <div className="flex flex-col">
-                          <span className={`text-sm font-medium ${isExpired ? 'text-red-600 dark:text-red-400' : isExpiringSoon ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                            {isExpired ? 'Expired' : isExpiringSoon ? 'Expiring Soon' : 'Valid'}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-500">{idExpiry}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <label
-                          title="Upload Bill"
-                          className={`p-2 rounded-lg transition-colors cursor-pointer ${uploadingId === emp.id
-                              ? 'text-purple-400 bg-purple-50 dark:bg-purple-900/20'
-                              : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-                            }`}
-                        >
-                          {uploadingId === emp.id ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => handleUploadBill(emp.id, e.target.files[0])}
-                            accept="image/*,.pdf"
-                            disabled={uploadingId === emp.id}
-                          />
-                        </label>
-                        <button
-                          onClick={async () => {
-                            if (window.confirm('Delete this employee?')) {
-                              try {
-                                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/employees/${emp.id}`, {
-                                  method: 'DELETE'
-                                });
-                                const result = await response.json();
-                                if (result.success) {
-                                  fetchEmployees();
-                                } else {
-                                  alert('Failed to delete: ' + result.message);
-                                }
-                              } catch (err) {
-                                console.error('Error deleting employee:', err);
-                                alert('Error deleting employee from database');
-                              }
-                            }
-                          }}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                        <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
-                          <Info size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <div className="glass-panel overflow-hidden rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900/30">
+        <div className="ag-theme-alpine w-full h-[600px] dark:ag-theme-alpine-dark">
+          <AgGridReact
+            rowData={employees}
+            columnDefs={columnDefs}
+            defaultColDef={defaultColDef}
+            quickFilterText={searchText}
+            animateRows={true}
+            pagination={true}
+            paginationPageSize={10}
+            paginationPageSizeSelector={[10, 20, 50]}
+            loading={loading}
+            onGridReady={(params) => params.api.sizeColumnsToFit()}
+          />
         </div>
       </div>
     </div>

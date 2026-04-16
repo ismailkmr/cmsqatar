@@ -8,11 +8,18 @@ import {
   ArrowRight,
   PieChart,
   RefreshCw,
-  Download
+  Download,
+  Search
 } from 'lucide-react';
+import { AgGridReact } from 'ag-grid-react';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+
+// Register AG Grid modules
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function BalanceSheet() {
   const { balanceSheetData, fetchBalanceSheet, loading } = useData();
+  const [searchText, setSearchText] = React.useState('');
 
   useEffect(() => {
     fetchBalanceSheet();
@@ -33,6 +40,45 @@ export default function BalanceSheet() {
       </div>
     );
   }
+
+  const columnDefs = [
+    { field: 'category', headerName: 'Category', flex: 1.5, minWidth: 150, cellClass: 'font-bold text-gray-800 dark:text-white' },
+    { 
+      field: 'income', 
+      headerName: 'Income', 
+      flex: 1, 
+      minWidth: 110, 
+      cellClass: 'text-green-600 dark:text-green-500 font-medium',
+      valueFormatter: p => p.value > 0 ? `₹${p.value.toLocaleString()}` : '—'
+    },
+    { 
+      field: 'expense', 
+      headerName: 'Expense', 
+      flex: 1, 
+      minWidth: 110, 
+      cellClass: 'text-red-600 dark:text-red-500 font-medium',
+      valueFormatter: p => p.value > 0 ? `₹${p.value.toLocaleString()}` : '—'
+    },
+    { 
+      field: 'net', 
+      headerName: 'Net Position', 
+      flex: 1, 
+      minWidth: 120,
+      valueFormatter: p => `₹${p.value.toLocaleString()}`,
+      cellClassRules: {
+        'text-green-600 dark:text-green-400 font-bold': p => p.value >= 0,
+        'text-red-600 dark:text-red-400 font-bold': p => p.value < 0,
+      }
+    }
+  ];
+
+  const defaultColDef = {
+    sortable: true,
+    filter: true,
+    floatingFilter: true,
+    resizable: true,
+    suppressMovable: true,
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -150,33 +196,28 @@ export default function BalanceSheet() {
           </div>
         </div>
 
-        <div className="overflow-x-auto -mx-6 lg:mx-0">
-          <table className="w-full text-left min-w-[600px]">
-            <thead>
-              <tr className="text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider border-b border-gray-100 dark:border-gray-800">
-                <th className="px-6 pb-4 font-semibold">Category</th>
-                <th className="px-6 pb-4 font-semibold text-right">Income</th>
-                <th className="px-6 pb-4 font-semibold text-right">Expense</th>
-                <th className="px-6 pb-4 font-semibold text-right">Net Position</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-              {balanceSheetData?.ledgerSummary.map((item, idx) => (
-                <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="px-6 py-4 font-bold text-gray-800 dark:text-white">{item.category}</td>
-                  <td className="px-6 py-4 text-right text-green-600 dark:text-green-500 font-medium whitespace-nowrap">
-                    {item.income > 0 ? `₹${item.income.toLocaleString()}` : '—'}
-                  </td>
-                  <td className="px-6 py-4 text-right text-red-600 dark:text-red-500 font-medium whitespace-nowrap">
-                    {item.expense > 0 ? `₹${item.expense.toLocaleString()}` : '—'}
-                  </td>
-                  <td className={`px-6 py-4 text-right font-bold whitespace-nowrap ${item.net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    ₹{item.net.toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search detailed ledger..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition-all shadow-sm"
+            />
+          </div>
+          
+          <div className="ag-theme-alpine w-full h-[500px] dark:ag-theme-alpine-dark">
+            <AgGridReact
+              rowData={balanceSheetData?.ledgerSummary || []}
+              columnDefs={columnDefs}
+              defaultColDef={defaultColDef}
+              quickFilterText={searchText}
+              animateRows={true}
+              onGridReady={(params) => params.api.sizeColumnsToFit()}
+            />
+          </div>
         </div>
       </div>
     </div>

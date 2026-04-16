@@ -1,10 +1,16 @@
 import React, { useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
-import { FileSpreadsheet, Download, ChevronRight } from 'lucide-react';
+import { FileSpreadsheet, Download, ChevronRight, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { AgGridReact } from 'ag-grid-react';
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community';
+
+// Register AG Grid modules
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function Financials() {
   const { dayBook, getDashboardMetrics, balanceSheetData, fetchBalanceSheet, loading } = useData();
+  const [searchText, setSearchText] = React.useState('');
   
   useEffect(() => {
     fetchBalanceSheet();
@@ -27,6 +33,45 @@ export default function Financials() {
     });
     ledgerEntries = Array.from(ledgerMap, ([category, data]) => ({ category, ...data }));
   }
+
+  const columnDefs = [
+    { field: 'category', headerName: 'Category', flex: 1.5, minWidth: 150 },
+    { 
+      field: 'income', 
+      headerName: 'Income', 
+      flex: 1, 
+      minWidth: 100, 
+      cellClass: 'text-green-600 dark:text-green-500 font-medium',
+      valueFormatter: p => `₹${p.value}`
+    },
+    { 
+      field: 'expense', 
+      headerName: 'Expense', 
+      flex: 1, 
+      minWidth: 100, 
+      cellClass: 'text-red-600 dark:text-red-500 font-medium',
+      valueFormatter: p => `₹${p.value}`
+    },
+    { 
+      headerName: 'Net', 
+      flex: 1, 
+      minWidth: 100,
+      valueGetter: p => p.data.income - p.data.expense,
+      valueFormatter: p => `₹${p.value}`,
+      cellClassRules: {
+        'text-green-600 dark:text-green-400 font-bold': p => p.value >= 0,
+        'text-red-600 dark:text-red-400 font-bold': p => p.value < 0,
+      }
+    }
+  ];
+
+  const defaultColDef = {
+    sortable: true,
+    filter: true,
+    floatingFilter: true,
+    resizable: true,
+    suppressMovable: true,
+  };
 
   if (loading) {
     return <div className="p-8 text-center">Loading financial data...</div>;
@@ -56,29 +101,28 @@ export default function Financials() {
             <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Category Ledger</h2>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 text-sm">
-                  <th className="pb-3 font-medium">Category</th>
-                  <th className="pb-3 font-medium text-right text-green-600 dark:text-green-500">Income</th>
-                  <th className="pb-3 font-medium text-right text-red-600 dark:text-red-500">Expense</th>
-                  <th className="pb-3 font-medium text-right">Net</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
-                {ledgerEntries.map(({ category, income, expense }) => (
-                  <tr key={category} className="text-sm">
-                    <td className="py-3 font-medium text-gray-800 dark:text-gray-200">{category}</td>
-                    <td className="py-3 text-right text-gray-600 dark:text-gray-400">₹{income}</td>
-                    <td className="py-3 text-right text-gray-600 dark:text-gray-400">₹{expense}</td>
-                    <td className={`py-3 text-right font-medium ${income - expense >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      ₹{income - expense}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="w-full pl-10 pr-4 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition-all"
+              />
+            </div>
+            
+            <div className="ag-theme-alpine w-full h-[350px] dark:ag-theme-alpine-dark">
+              <AgGridReact
+                rowData={ledgerEntries}
+                columnDefs={columnDefs}
+                defaultColDef={defaultColDef}
+                quickFilterText={searchText}
+                animateRows={true}
+                onGridReady={(params) => params.api.sizeColumnsToFit()}
+              />
+            </div>
           </div>
         </div>
 
